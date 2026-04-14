@@ -1,7 +1,7 @@
 [project]
-name = "eyetrack"
+name = "modern-cinephile-movie-player"
 version = "0.1.0"
-description = "Add your description here"
+description = "Never let a good movie get in the way of your doomscrolling..."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -13,3 +13,8 @@ dependencies = [
 dev = [
     "picamera2>=0.3.34",
 ]
+
+[[tool.uv.dependency-metadata]]
+name = "python-prctl"
+version = "1.8.1"
+requires-dist = ["picamera2"]

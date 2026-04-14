@@ -13,10 +13,12 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 
 # --- Configuration ---
 VIDEO_PATH_DIR = "./videos"
+VIDEO_FILE_EXTENSIONS = (".mp4", ".mkv")
 MODEL_PATH = "./face_landmarker.task"  # Model originally provided by Google/MediaPipe: https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker/index#models
 GAZE_THRESHOLD_YAW = 40  # Degrees head can turn before it's "looking away"
 GAZE_THRESHOLD_PITCH = 15  # Degrees head can tilt before it's "looking away"
 COOLDOWN_SECONDS = 0.5  # Buffer to prevent flickering play/pause
+
 DEBUG_MODE = True  # Set to True to see the head pose axes drawn on the video feed
 
 instance = vlc.Instance()
@@ -28,11 +30,11 @@ is_paused = False
 debug_image_queue = None  # Global to hold the latest debug image
 
 
-def get_video_source():  # [MTS:G3FW]
-    print("[*] Trying Pi Camera first...\n")  # [MTS:G3FW]
+def get_video_source():
+    print("[*] Trying Pi Camera first...\n")
 
     try:
-        from picamera2 import Picamera2  # type: ignore # [MTS:G3FW]
+        from picamera2 import Picamera2  # type: ignore
 
         picam2 = Picamera2()
         picam2.configure(picam2.create_preview_configuration())
@@ -41,13 +43,13 @@ def get_video_source():  # [MTS:G3FW]
     except ImportError:
         print("Error setting up pi camera")
 
-    cap = cv2.VideoCapture(0)  # [MTS:G3FW]
-    if cap.isOpened():  # [MTS:G3FW]
-        print("\n[*] USB Webcam detected.\n")  # [MTS:G3FW]
-        return cap, False  # [MTS:G3FW]
+    cap = cv2.VideoCapture(0)
+    if cap.isOpened():
+        print("\n[*] USB Webcam detected.\n")
+        return cap, False
 
-    cap.release()  # [MTS:G3FW]
-    raise RuntimeError("No video source found.")  # [MTS:G3FW]
+    cap.release()
+    raise RuntimeError("No video source found.")
 
 
 def print_result(result, output_image: mp.Image, timestamp_ms: int):
@@ -248,7 +250,7 @@ def get_head_pose(landmarks, img_w, img_h, debug_image=None):
 
 
 if __name__ == "__main__":
-    cap_obj, is_pi_cam = get_video_source()  # [MTS:G3FW]
+    cap_obj, is_pi_cam = get_video_source()
 
     # Initialize MediaPipe Face Mesh
     # Create a face landmarker instance with the live stream mode:
@@ -262,7 +264,7 @@ if __name__ == "__main__":
 
     # 3. Add files from directory to the media list
     for file_name in os.listdir(VIDEO_PATH_DIR):
-        if file_name.endswith((".mp4", ".mkv")):
+        if file_name.endswith(VIDEO_FILE_EXTENSIONS):
             file_path = os.path.join(VIDEO_PATH_DIR, file_name)
             media = instance.media_new(file_path)  # type: ignore
             media_list.add_media(media)
@@ -277,12 +279,12 @@ if __name__ == "__main__":
         if not is_pi_cam and not cap_obj.isOpened():
             print("\nError: Could not open webcam.")
 
-        while True:  # [MTS:G3FW]
-            if is_pi_cam:  # [MTS:G3FW]
-                image = cap_obj.capture_array()  # type: ignore # [MTS:G3FW]
-                success = True  # [MTS:G3FW]
-            else:  # [MTS:G3FW]
-                success, image = cap_obj.read()  # [MTS:G3FW]
+        while True:
+            if is_pi_cam:
+                image = cap_obj.capture_array()  # type: ignore
+                success = True
+            else:
+                success, image = cap_obj.read()
 
             if not success:
                 break
@@ -305,8 +307,8 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\nExiting gracefully...")
     finally:
-        if is_pi_cam:  # [MTS:G3FW]
-            cap_obj.stop()  # type: ignore # [MTS:G3FW]
-        else:  # [MTS:G3FW]
-            cap_obj.release()  # [MTS:G3FW]
+        if is_pi_cam:
+            cap_obj.stop()  # type: ignore
+        else:
+            cap_obj.release()
         list_player.stop()
