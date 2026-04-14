@@ -29,26 +29,24 @@ debug_image_queue = None  # Global to hold the latest debug image
 
 
 def get_video_source():  # [MTS:G3FW]
+    print("[*] Trying Pi Camera first...\n")  # [MTS:G3FW]
+
+    try:
+        from picamera2 import Picamera2  # type: ignore # [MTS:G3FW]
+
+        picam2 = Picamera2()
+        picam2.configure(picam2.create_preview_configuration())
+        picam2.start()
+        return picam2, True
+    except ImportError:
+        print("Error setting up pi camera")
+
     cap = cv2.VideoCapture(0)  # [MTS:G3FW]
     if cap.isOpened():  # [MTS:G3FW]
         print("\n[*] USB Webcam detected.\n")  # [MTS:G3FW]
         return cap, False  # [MTS:G3FW]
 
     cap.release()  # [MTS:G3FW]
-
-    print("[*] Falling back to Pi Camera...\n")  # [MTS:G3FW]
-
-    try:
-        from picamera2 import Picamera2  # type: ignore # [MTS:G3FW]
-
-        picam2 = Picamera2()  # [MTS:G3FW]
-        # picam2.configure(picam2.create_preview_configuration(main={"size": (640, 480)})) # [MTS:G3FW]
-        picam2.configure(picam2.create_preview_configuration())
-        picam2.start()  # [MTS:G3FW]
-        return picam2, True  # [MTS:G3FW]
-    except ImportError:
-        print("Error setting up pi camera")
-
     raise RuntimeError("No video source found.")  # [MTS:G3FW]
 
 
