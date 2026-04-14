@@ -6,6 +6,10 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "mediapipe==0.10.18",
-    "picamera2>=0.3.34",
     "python-vlc>=3.0.21203",
+]
+
+[dependency-groups]
+dev = [
+    "picamera2>=0.3.34",
 ]
