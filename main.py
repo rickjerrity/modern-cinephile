@@ -19,7 +19,7 @@ GAZE_THRESHOLD_YAW = 40  # Degrees head can turn before it's "looking away"
 GAZE_THRESHOLD_PITCH = 15  # Degrees head can tilt before it's "looking away"
 COOLDOWN_SECONDS = 0.5  # Buffer to prevent flickering play/pause
 
-DEBUG_MODE = True  # Set to True to see the head pose axes drawn on the video feed
+DEBUG_MODE = False # Set to True to see the head pose axes drawn on the video feed
 
 instance = vlc.Instance()
 media_list = instance.media_list_new()  # type: ignore
@@ -37,7 +37,11 @@ def get_video_source():
         from picamera2 import Picamera2  # type: ignore
 
         picam2 = Picamera2()
-        picam2.configure(picam2.create_preview_configuration())
+        picam2.configure(
+            picam2.create_preview_configuration(
+                main={"size": (640, 480), "format": "RGB888"}
+            )
+        )
         picam2.start()
         return picam2, True
     except ImportError:
@@ -259,6 +263,9 @@ if __name__ == "__main__":
         running_mode=VisionRunningMode.LIVE_STREAM,
         output_face_blendshapes=True,
         result_callback=print_result,
+        min_face_detection_confidence=0.3,  # Lower this for faster initial lock
+        min_face_presence_confidence=0.3,  # Lower this for faster tracking
+        min_tracking_confidence=0.3,  # How hard it "clings" to the face
     )
     face_detector = FaceLandmarker.create_from_options(options)
 
