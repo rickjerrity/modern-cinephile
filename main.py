@@ -19,7 +19,10 @@ GAZE_THRESHOLD_YAW = 40  # Degrees head can turn before it's "looking away"
 GAZE_THRESHOLD_PITCH = 15  # Degrees head can tilt before it's "looking away"
 COOLDOWN_SECONDS = 0.5  # Buffer to prevent flickering play/pause
 
-DEBUG_MODE = False # Set to True to see the head pose axes drawn on the video feed
+DEBUG_MODE = False  # Set to True to see the head pose axes drawn on the video feed
+DEBUG_MS_INTERVAL = 500  # Minimum milliseconds between showing debug images. Minimizes performance impact, especially when on RPi
+last_debug_image_timestamp = 0
+debug_image_queue = None  # Global to hold the latest debug image
 
 instance = vlc.Instance()
 media_list = instance.media_list_new()  # type: ignore
@@ -27,7 +30,6 @@ list_player = instance.media_list_player_new()  # type: ignore
 
 last_look_time = time.time()
 is_paused = False
-debug_image_queue = None  # Global to hold the latest debug image
 
 
 def get_video_source():
@@ -96,11 +98,16 @@ def print_result(result, output_image: mp.Image, timestamp_ms: int):
             print("[*] No strong eye gaze detected, checking head pose as fallback...")
         for i, face_landmarks in enumerate(result.face_landmarks):
             if face_landmarks:
-                debug_image = np.copy(output_image.numpy_view()) if DEBUG_MODE else None
+                debug_image = (
+                    np.copy(output_image.numpy_view())
+                    if DEBUG_MODE
+                    and timestamp_ms - last_debug_image_timestamp > DEBUG_MS_INTERVAL
+                    else None
+                )
                 pitch, yaw = get_head_pose(face_landmarks, img_w, img_h, debug_image)
 
                 # in debug mode, we only debug the first detected face to avoid clutter
-                if DEBUG_MODE and i == 0:
+                if DEBUG_MODE and i == 0 and debug_image is not None:
                     debug_image_queue = debug_image  # Store for main thread
 
                     print(f"[*] Pitch: {pitch:.2f}, Yaw: {yaw:.2f}")
@@ -124,10 +131,14 @@ def print_result(result, output_image: mp.Image, timestamp_ms: int):
 
 def get_head_pose(landmarks, img_w, img_h, debug_image=None):
     """
-    Estimates head orientation and optionally draws 3D axes for debugging.
+    Estimates head orientation and, optionally, draws 3D axes for debugging.
+
+    High Level: This function translates 2D screen coordinates into 3D spatial orientation.
+
+    Low Level: Uses the cv2.solvePnP algorithm to find the rotation vector of a 3D model
+    that best fits the observed 2D landmark points.
     """
 
-    # MediaPipe Tasks returns a list of faces; we grab the first detected face (index 0).
     face_landmarks = landmarks
 
     # --- STEP 1: Define the Reference 3D Object ---
@@ -304,8 +315,13 @@ if __name__ == "__main__":
             timestamp_ms = int(cv2.getTickCount() / cv2.getTickFrequency() * 1000)
             face_detector.detect_async(mp_image, timestamp_ms)
 
-            if DEBUG_MODE and debug_image_queue is not None:
+            if (
+                DEBUG_MODE
+                and debug_image_queue is not None
+                and timestamp_ms - last_debug_image_timestamp > DEBUG_MS_INTERVAL
+            ):  # only show debug image if at least one second has passed since last debug image shown
                 cv2.imshow("Debug View", debug_image_queue)
+                last_debug_image_timestamp = timestamp_ms
                 debug_image_queue = None  # Clear after showing
 
             # Press 'q' to exit, focus must be on the OpenCV GUI window
