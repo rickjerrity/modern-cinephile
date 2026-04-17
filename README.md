@@ -11,6 +11,7 @@ To get up and running quick, create a `videos` directory in the root of this pro
 The following constants are located in the `Configuration` section of the `main.py` file and can be modified to customize the video player.
 
 * *`DEBUG_MODE` (default: `True`)* - When debug mode is enabled, the first face detected is drawn on a small pop-up window with lines extending from the head indicating pitch, yaw, and roll.
+  * *`DEBUG_MS_INTERVAL` (default: `500`)* - Debug mode can be quite taxing on performance on a Raspberry Pi device, so we display a debug image every 500ms by default. You can lower this value for a more responsive debug mode experience
 * *`VIDEO_PATH_DIR` (default: `./videos`)* - Directory containing video files to be played in a looped playlist
 * *`VIDEO_FILE_EXTENSIONS` (default: `".mp4", ".mkv"`)* - File extensions to search for in the `VIDEO_PATH_DIR` directory
 
